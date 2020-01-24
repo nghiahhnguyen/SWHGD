@@ -1,0 +1,11 @@
+import argparse
+
+
+ap = argparse.ArgumentParser()
+
+# Add the arguments to the parser
+	ap.add_argument("-a", "--foperand", required=True,
+	   help="first operand")
+	ap.add_argument("-b", "--soperand", required=True,
+	   help="second operand")
+args = vars(ap.parse_args())
