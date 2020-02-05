@@ -33,7 +33,7 @@ def intersection(list1, list2):
 snapshots = {}
 forks = {}
 snapshot_forks = {}
-with open('snapshot_revision_git_bao.csv', mode = 'r') as project_2:
+with open('snapshot_revision_other_bao.csv', mode = 'r') as project_2:
    csv_reader_2 = csv.DictReader(project_2)
    line_count = 0
    for row in csv_reader_2:
@@ -58,7 +58,7 @@ with open('snapshot_revision_git_bao.csv', mode = 'r') as project_2:
    print(f'Processed {line_count} lines')
  
 gap_limit_mili = int(3.456e+8)
-with open('project-git-metrics-main.csv', mode='w') as metric_file:
+with open('project-other-metrics-main.csv', mode='w') as metric_file:
    metric_writer_2 = csv.writer(metric_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
    metric_writer_2.writerow(['snapshot_id', 'total_revisions', 'total_authors', 'revision_frequency', 'author_frequency', 'num_forks'])
    for id, snapshot in snapshots.items():
