@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -8,11 +9,10 @@
 #include <utility>
 #include <vector>
 
-typedef pair<int, int> ii;
-typedef vector<vector<ii>> vvii;
-typedef unordered_map<char[40], uint32_t> cati;
-
 using namespace std;
+
+#define mp make_pair
+typedef unordered_map<string, uint32_t> cati;
 
 class Revision {
 public:
@@ -20,21 +20,29 @@ public:
 	char id[40];
 };
 
+class ParentRelationship {
+public:
+	ParentRelationship(int rank, string d)
+		: parentRank(rank), dest(d){};
+	int parentRank;
+	string dest;
+};
+
 vector<Revision> revisions;
-vvii graphParent, graphChildren;
+vector<vector<ParentRelationship>> graphParent, graphChildren;
 cati idToGraphIdx;
 
 uint32_t mergeRevision(string id)
 {
 	uint32_t currentIdx;
 	currentIdx = uint32_t(graphParent.size());
-	unordered_map<char[40], uint32_t>::const_iterator it = idToGraphIdx.find(id.c_str());
+	unordered_map<string, uint32_t>::const_iterator it = idToGraphIdx.find(id);
 
 	// not exist yet
 	if (it == idToGraphIdx.end()) {
-		graphParent.append(vector<ii>());
-		graphChildren.append(vector<ii>());
-        revisions.push_back(Revision(id));
+		graphParent.push_back(vector<ParentRelationship>());
+		graphChildren.push_back(vector<ParentRelationship>());
+		revisions.push_back(Revision(id));
 		return currentIdx++;
 	}
 	return it->second;
@@ -49,21 +57,22 @@ void readRecord()
 	string line;
 	// skip the header
 	getline(fin, line);
-	string id, parentId, parentRank;
+	string id, parentId;
+    int parentRank;
 	while (getline(fin, line)) {
 		stringstream ss(line);
 		ss >> id >> parentId >> parentRank;
 		uint32_t revisionIdx = mergeRevision(id),
 				 parentRevisionIdx = mergeRevision(parentId);
-        graphParent[id].push_back({parentId, parentRank});
-        graphChildren[parentId].push_back({id, parentRank});
+		graphParent[revisionIdx].push_back(ParentRelationship(parentRank, parentId));
+		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, id));
 	}
 
-    fin.close();
+	fin.close();
 }
 
 int main()
 {
-    readRecord();
-    return 0;
+	readRecord();
+	return 0;
 }
