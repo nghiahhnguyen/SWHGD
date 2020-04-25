@@ -43,6 +43,7 @@ uint32_t mergeRevision(string id)
 		graphParent.push_back(vector<ParentRelationship>());
 		graphChildren.push_back(vector<ParentRelationship>());
 		revisions.push_back(Revision(id));
+		idToGraphIdx.insert(mp(id, currentIdx));
 		return currentIdx++;
 	}
 	return it->second;
