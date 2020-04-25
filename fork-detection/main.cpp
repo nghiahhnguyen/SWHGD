@@ -64,10 +64,10 @@ void readRecord(char * filePath)
         getline(ss, parentId, ',');
         getline(ss, parentRankStr, '\n');
         parentRank = stoi(parentRankStr);
-		cout << id << ' ' << parentId << ' ' << parentRank << endl;
+		// cout << id << ' ' << parentId << ' ' << parentRank << endl;
 		uint32_t revisionIdx = mergeRevision(id),
 				 parentRevisionIdx = mergeRevision(parentId);
-		cout << "Indexes: " << revisionIdx << ' ' << parentRevisionIdx << endl;
+		// cout << "Indexes: " << revisionIdx << ' ' << parentRevisionIdx << endl;
 		graphParent[revisionIdx].push_back(ParentRelationship(parentRank, parentId));
 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, id));
 	}
