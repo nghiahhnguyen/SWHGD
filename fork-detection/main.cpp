@@ -48,26 +48,24 @@ uint32_t mergeRevision(string id)
 	return it->second;
 }
 
-void readRecord(char * filePath)
+void readRecord()
 {
 	ifstream fin;
+	string filePath = "/tmp/revision_history_14.csv";
 	fin.open(filePath);
 
 	string line;
 	// skip the header
 	getline(fin, line);
-	string id, parentId, parentRankStr;
+	string id, parentId;
     	int parentRank;
 	while (getline(fin, line)) {
 		stringstream ss(line);
-        getline(ss, id, ',');
-        getline(ss, parentId, ',');
-        getline(ss, parentRankStr, '\n');
-        parentRank = stoi(parentRankStr);
-		cout << id << ' ' << parentId << ' ' << parentRank << endl;
+		ss >> id >> parentId >> parentRank;
+		// cout << id << ' ' << parentId << ' ' << parentRank << endl;
 		uint32_t revisionIdx = mergeRevision(id),
 				 parentRevisionIdx = mergeRevision(parentId);
-		cout << "Indexes: " << revisionIdx << ' ' << parentRevisionIdx << endl;
+		// cout << "Indexes: " << revisionIdx << ' ' << parentRevisionIdx << endl;
 		graphParent[revisionIdx].push_back(ParentRelationship(parentRank, parentId));
 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, id));
 	}
@@ -76,8 +74,8 @@ void readRecord(char * filePath)
 	fin.close();
 }
 
-int main(int argc, char** argv)
+int main(int argc,)
 {
-	readRecord(argv[1]);
+	readRecord();
 	return 0;
 }
