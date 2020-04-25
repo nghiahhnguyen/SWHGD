@@ -51,22 +51,25 @@ uint32_t mergeRevision(string id)
 void readRecord()
 {
 	ifstream fin;
-	string filePath = "/var/lib/neo4j/import/revision_history_14.csv";
+	string filePath = "/tmp/revision_history_14.csv";
 	fin.open(filePath);
 
 	string line;
 	// skip the header
 	getline(fin, line);
 	string id, parentId;
-    int parentRank;
+    	int parentRank;
 	while (getline(fin, line)) {
 		stringstream ss(line);
 		ss >> id >> parentId >> parentRank;
+		cout << id << ' ' << parentId << ' ' << parentRank << endl;
 		uint32_t revisionIdx = mergeRevision(id),
 				 parentRevisionIdx = mergeRevision(parentId);
+		cout << "Indexes: " << revisionIdx << ' ' << parentRevisionIdx << endl;
 		graphParent[revisionIdx].push_back(ParentRelationship(parentRank, parentId));
 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, id));
 	}
+	cout << "Total size: " << revisions.size() << ' ' << graphParent.size() << ' ' << graphChildren.size() << endl;
 
 	fin.close();
 }
