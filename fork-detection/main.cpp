@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -95,6 +96,7 @@ uint32_t mergeNode(const uint32_t &id, vector<Node> &graph, unordered_map<uint32
 // load the record into the memory
 void loadRevisionHistory(char *filePath)
 {
+	auto start = chrono::high_resolution_clock::now();
 	ifstream fin;
 	fin.open(filePath);
 
@@ -114,13 +116,17 @@ void loadRevisionHistory(char *filePath)
 		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
 	}
-	cout << "Finished loading file " << filePath << "\nTotal size till now: revisions - " << revisions.size() << endl;
-
 	fin.close();
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
+
+	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
+		 << "Total size till now: revisions - " << revisions.size() << endl;
 }
 
 void loadOriginSnapshot(char *filePath)
 {
+	auto start = chrono::high_resolution_clock::now();
 	ifstream fin;
 	fin.open(filePath);
 
@@ -151,9 +157,11 @@ void loadOriginSnapshot(char *filePath)
 		graphSnapRev[snapshotIdx].push_back(revisionIdx);
 		graphRevSnap[revisionIdx].push_back(snapshotIdx);
 	}
-	cout << "Total size till now: revisions - " << revisions.size() << endl;
-
 	fin.close();
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
+	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
+		 << "Total size till now: revisions - " << revisions.size() << endl;
 }
 
 void exportFork(const uint32_t &originId, const string &exportPath)
