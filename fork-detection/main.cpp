@@ -3,13 +3,13 @@
 #include <fstream>
 #include <iostream>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <stack>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <set>
 
 using namespace std;
 
@@ -156,18 +156,11 @@ void loadOriginSnapshot(char *filePath)
 	fin.close();
 }
 
-void exportFork(const string& id, const string& exportPath)
+void exportFork(const int originId, const string &exportPath)
 {
-	uint32_t startNodeIndex = -1;
-	cati::iterator it = revisionIdToGraphIdx.find(id);
-	// if revision does not exist in Revision list
-	if (it == revisionIdToGraphIdx.end()) {
-		printf("Revision does not exists.\n");
-		return;
-	}
-	else {
-		startNodeIndex = it->second;
-	}
+	uint32_t originIdx = originIdToGraphIdx[originId],
+			 snapshotIdx = graphOriginSnap[originIdx][0],
+			 startNodeIndex = graphSnapRev[snapshotIdx][0];
 
 	/*
 	Find potential fork positions, for each position, push the index
@@ -218,12 +211,13 @@ void exportFork(const string& id, const string& exportPath)
 		while (!Si.empty()) {
 			uint32_t nodeIdx = Si.top();
 			Si.pop();
-			if (visited[nodeIdx]) continue;
+			if (visited[nodeIdx])
+				continue;
 
 			// found a point with snapshot
 			if (graphRevSnap[nodeIdx].size() > 0) {
 				for (uint32_t snapshotIdx : graphRevSnap[nodeIdx]) {
-					for (uint32_t originIdx: graphSnapOrigin[snapshotIdx]) {
+					for (uint32_t originIdx : graphSnapOrigin[snapshotIdx]) {
 						forkSnapshotOrigin.insert(mp(snapshotIdx, originIdx));
 					}
 				}
@@ -232,7 +226,11 @@ void exportFork(const string& id, const string& exportPath)
 	}
 
 	ofstream fout;
-	string outFilePath = exportPath + "/" + id + ".csv";
+	string outFilePath = exportPath + "/" + to_string(originId) + ".csv";
+	fout << "snapshot_id,origin_id\n";
+	for (set<ii>::iterator it = forkSnapshotOrigin.begin(); it != forkSnapshotOrigin.end(); ++it) {
+		fout << snapshots[it->first].id << ',' << origins[it->second].id << "\n";
+	}
 	fout.open(outFilePath);
 }
 
@@ -240,6 +238,6 @@ int main(int argc, char **argv)
 {
 	loadRevisionHistory(argv[1]);
 	loadOriginSnapshot(argv[2]);
-	exportFork("1", argv[3]);
+	exportFork(uint32_t(argv[4]), argv[3]);
 	return 0;
 }
