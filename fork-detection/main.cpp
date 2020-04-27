@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <set>
 
 using namespace std;
 
@@ -24,32 +25,27 @@ public:
 	char id[40];
 };
 
-class Snapshot {
+class Node {
 public:
-	Snapshot(string newId) { strcpy(id, newId.c_str()); }
-	char id[40];
-};
-
-class Origin {
-public:
-	Origin(string newId) { strcpy(id, newId.c_str()); }
-	char id[40];
+	Node(uint32_t id)
+		: id(id){};
+	uint32_t id;
 };
 
 class ParentRelationship {
 public:
 	ParentRelationship(int rank, int dest)
-		: parentRank(rank), dest(dest){};
-	int parentRank;
+		: rank(rank), dest(dest){};
+	int rank;
 	uint32_t dest;
 };
 
 // list of Revision nodes
 vector<Revision> revisions;
 // list of Snapshot nodes
-vector<Snapshot> snapshots;
+vector<Node> snapshots;
 // list of Origin nodes
-vector<Origin> origins;
+vector<Node> origins;
 
 // the adjacency list for Revision - Revision relationship
 vector<vector<ParentRelationship>> graphParents, graphChildren;
@@ -58,21 +54,38 @@ vector<vector<uint32_t>> graphRevSnap, graphSnapRev;
 // the adjacency list for the Snapshot - Origin relationship
 vector<vector<uint32_t>> graphSnapOrigin, graphOriginSnap;
 
-//=========================== FUNCTIONS ==========================
 // map from the Id of the Revision node to the index in revisions
-cati idToGraphIdx;
+cati revisionIdToGraphIdx;
+unordered_map<uint32_t, uint32_t> originIdToGraphIdx, snapshotIdToGraphIdx;
 
-uint32_t mergeRevision(string id)
+//=========================== FUNCTIONS ==========================
+
+uint32_t mergeRevision(const string &id)
 {
 	uint32_t currentIdx;
 	currentIdx = uint32_t(graphParents.size());
-	unordered_map<string, uint32_t>::const_iterator it = idToGraphIdx.find(id);
+	unordered_map<string, uint32_t>::const_iterator it = revisionIdToGraphIdx.find(id);
 
 	// not exist yet
-	if (it == idToGraphIdx.end()) {
+	if (it == revisionIdToGraphIdx.end()) {
 		graphParents.push_back(vector<ParentRelationship>());
 		graphChildren.push_back(vector<ParentRelationship>());
 		revisions.push_back(Revision(id));
+		revisionIdToGraphIdx.insert(mp(id, currentIdx));
+		return currentIdx++;
+	}
+	return it->second;
+}
+
+uint32_t mergeNode(const uint32_t &id, vector<Node> &graph, unordered_map<uint32_t, uint32_t> &idToGraphIdx)
+{
+	uint32_t currentIdx;
+	currentIdx = uint32_t(graph.size());
+	unordered_map<uint32_t, uint32_t>::const_iterator it = idToGraphIdx.find(id);
+
+	// not exist yet
+	if (it == idToGraphIdx.end()) {
+		graph.push_back(Node(id));
 		idToGraphIdx.insert(mp(id, currentIdx));
 		return currentIdx++;
 	}
@@ -80,7 +93,7 @@ uint32_t mergeRevision(string id)
 }
 
 // load the record into the memory
-void readRecord(char *filePath)
+void loadRevisionHistory(char *filePath)
 {
 	ifstream fin;
 	fin.open(filePath);
@@ -101,17 +114,54 @@ void readRecord(char *filePath)
 		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
 	}
-	cout << "Total size: " << revisions.size() << ' ' << graphParents.size() << ' ' << graphChildren.size() << endl;
+	cout << "Finished loading file " << filePath << "\nTotal size till now: revisions - " << revisions.size() << endl;
 
 	fin.close();
 }
 
-void printFork(string id)
+void loadOriginSnapshot(char *filePath)
+{
+	ifstream fin;
+	fin.open(filePath);
+
+	string line;
+	// skip the header
+	getline(fin, line);
+	string origin, snapshot, revision;
+	uint32_t originId, snapshotId, revisionIdx;
+	while (getline(fin, line)) {
+		stringstream ss(line);
+		getline(ss, origin, ',');
+		getline(ss, snapshot, ',');
+		getline(ss, revision, '\n');
+		originId = stoi(origin);
+		snapshotId = stoi(snapshot);
+
+		cati::iterator it = revisionIdToGraphIdx.find(revision);
+		// if revision does not exist
+		if (it == revisionIdToGraphIdx.end()) {
+			printf("Revision ID not found, skipping this entry\n");
+			continue;
+		}
+		revisionIdx = it->second;
+		uint32_t snapshotIdx = mergeNode(snapshotId, snapshots, snapshotIdToGraphIdx),
+				 originIdx = mergeNode(originId, origins, originIdToGraphIdx);
+		graphSnapOrigin[snapshotIdx].push_back(originIdx);
+		graphOriginSnap[originIdx].push_back(snapshotIdx);
+		graphSnapRev[snapshotIdx].push_back(revisionIdx);
+		graphRevSnap[revisionIdx].push_back(snapshotIdx);
+	}
+	cout << "Total size till now: revisions - " << revisions.size() << endl;
+
+	fin.close();
+}
+
+void exportFork(const string& id, const string& exportPath)
 {
 	uint32_t startNodeIndex = -1;
-	cati::iterator it = idToGraphIdx.find(id);
+	cati::iterator it = revisionIdToGraphIdx.find(id);
 	// if revision does not exist in Revision list
-	if (it == idToGraphIdx.end()) {
+	if (it == revisionIdToGraphIdx.end()) {
 		printf("Revision does not exists.\n");
 		return;
 	}
@@ -120,18 +170,18 @@ void printFork(string id)
 	}
 
 	/*
-	Find the potential fork positions, for each position, get the index
+	Find potential fork positions, for each position, push the index
 	of that Revision node, along with its child on the branch from the
-	starting Revision node
+	starting Revision node to `potentialForkPositions`
 	*/
-	stack<ii> S;
-	vector<ii> potentialForkPoints;
+	stack<ii> Sii;
+	vector<ii> potentialForkPositions;
 	vector<bool> visited(uint32_t(revisions.size()));
-	S.push(mp(startNodeIndex, -1));
+	Sii.push(mp(startNodeIndex, startNodeIndex));
 	visited[startNodeIndex] = true;
-	while (!S.empty()) {
-		ii pairNode = S.top();
-		S.pop();
+	while (!Sii.empty()) {
+		ii pairNode = Sii.top();
+		Sii.pop();
 		uint32_t curNodeIndex = pairNode.first,
 				 prevNodeIndex = pairNode.second;
 
@@ -140,21 +190,56 @@ void printFork(string id)
 
 		// if node is potential forking point
 		if (uint32_t(graphChildren[curNodeIndex].size()) > 1) {
-			potentialForkPoints.push_back(mp(curNodeIndex, prevNodeIndex));
+			potentialForkPositions.push_back(mp(curNodeIndex, prevNodeIndex));
 		}
 
 		for (ParentRelationship p : graphParents[curNodeIndex]) {
 			uint32_t parentIndex = p.dest;
 			if (!visited[parentIndex]) {
-				S.push(mp(parentIndex, curNodeIndex));
+				visited[parentIndex] = true;
+				Sii.push(mp(parentIndex, curNodeIndex));
 			}
 		}
 	}
 
+	/*
+	For each potential fork position in `potentialForkPositions`, traverse through its
+	child to get fork origins, notice that this does not confirm yet either the original
+	origin or the origins found in this step is the real fork
+	*/
+	stack<uint32_t> Si;
+	set<ii> forkSnapshotOrigin;
+	for (ii forkPair : potentialForkPositions) {
+		uint32_t forkPosition = forkPair.first,
+				 prevChild = forkPair.second;
+		visited.assign(uint32_t(revisions.size()), false);
+		Si.push(forkPosition);
+		visited[forkPosition] = true;
+		while (!Si.empty()) {
+			uint32_t nodeIdx = Si.top();
+			Si.pop();
+			if (visited[nodeIdx]) continue;
+
+			// found a point with snapshot
+			if (graphRevSnap[nodeIdx].size() > 0) {
+				for (uint32_t snapshotIdx : graphRevSnap[nodeIdx]) {
+					for (uint32_t originIdx: graphSnapOrigin[snapshotIdx]) {
+						forkSnapshotOrigin.insert(mp(snapshotIdx, originIdx));
+					}
+				}
+			}
+		}
+	}
+
+	ofstream fout;
+	string outFilePath = exportPath + "/" + id + ".csv";
+	fout.open(outFilePath);
 }
 
 int main(int argc, char **argv)
 {
-	readRecord(argv[1]);
+	loadRevisionHistory(argv[1]);
+	loadOriginSnapshot(argv[2]);
+	exportFork("1", argv[3]);
 	return 0;
 }

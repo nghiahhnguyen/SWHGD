@@ -30,7 +30,7 @@ public:
 
 vector<Revision> revisions;
 vector<vector<ParentRelationship>> graphParent, graphChildren;
-cati idToGraphIdx;
+cati revisionIdToGraphIdx;
 
 int main(int argc, char** argv)
 {
