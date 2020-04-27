@@ -156,7 +156,7 @@ void loadOriginSnapshot(char *filePath)
 	fin.close();
 }
 
-void exportFork(const int originId, const string &exportPath)
+void exportFork(const uint32_t &originId, const string &exportPath)
 {
 	uint32_t originIdx = originIdToGraphIdx[originId],
 			 snapshotIdx = graphOriginSnap[originIdx][0],
@@ -238,6 +238,10 @@ int main(int argc, char **argv)
 {
 	loadRevisionHistory(argv[1]);
 	loadOriginSnapshot(argv[2]);
-	exportFork(uint32_t(argv[4]), argv[3]);
+	string buffer(argv[4]);
+	stringstream ss(buffer);
+	uint32_t startOriginId;
+	ss >> startOriginId;
+	exportFork(startOriginId, argv[3]);
 	return 0;
 }
