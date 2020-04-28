@@ -245,11 +245,11 @@ void exportFork(const uint32_t &originId, const string &exportPath)
 int main(int argc, char **argv)
 {
 	loadRevisionHistory(argv[1]);
-	loadOriginSnapshot(argv[2]);
+	//loadOriginSnapshot(argv[2]);
 	string buffer(argv[4]);
 	stringstream ss(buffer);
 	uint32_t startOriginId;
 	ss >> startOriginId;
-	exportFork(startOriginId, argv[3]);
+	//exportFork(startOriginId, argv[3]);
 	return 0;
 }
