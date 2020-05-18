@@ -1,15 +1,16 @@
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <iostream>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <stack>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <set>
 
 using namespace std;
 
@@ -95,6 +96,7 @@ uint32_t mergeNode(const uint32_t &id, vector<Node> &graph, unordered_map<uint32
 // load the record into the memory
 void loadRevisionHistory(char *filePath)
 {
+	auto start = chrono::high_resolution_clock::now();
 	ifstream fin;
 	fin.open(filePath);
 
@@ -114,13 +116,17 @@ void loadRevisionHistory(char *filePath)
 		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
 	}
-	cout << "Finished loading file " << filePath << "\nTotal size till now: revisions - " << revisions.size() << endl;
-
 	fin.close();
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
+
+	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
+		 << "Total size till now: revisions - " << revisions.size() << endl;
 }
 
 void loadOriginSnapshot(char *filePath)
 {
+	auto start = chrono::high_resolution_clock::now();
 	ifstream fin;
 	fin.open(filePath);
 
@@ -151,23 +157,18 @@ void loadOriginSnapshot(char *filePath)
 		graphSnapRev[snapshotIdx].push_back(revisionIdx);
 		graphRevSnap[revisionIdx].push_back(snapshotIdx);
 	}
-	cout << "Total size till now: revisions - " << revisions.size() << endl;
-
 	fin.close();
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
+	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
+		 << "Total size till now: revisions - " << revisions.size() << endl;
 }
 
-void exportFork(const string& id, const string& exportPath)
+void exportFork(const uint32_t &originId, const string &exportPath)
 {
-	uint32_t startNodeIndex = -1;
-	cati::iterator it = revisionIdToGraphIdx.find(id);
-	// if revision does not exist in Revision list
-	if (it == revisionIdToGraphIdx.end()) {
-		printf("Revision does not exists.\n");
-		return;
-	}
-	else {
-		startNodeIndex = it->second;
-	}
+	uint32_t originIdx = originIdToGraphIdx[originId],
+			 snapshotIdx = graphOriginSnap[originIdx][0],
+			 startNodeIndex = graphSnapRev[snapshotIdx][0];
 
 	/*
 	Find potential fork positions, for each position, push the index
@@ -218,12 +219,13 @@ void exportFork(const string& id, const string& exportPath)
 		while (!Si.empty()) {
 			uint32_t nodeIdx = Si.top();
 			Si.pop();
-			if (visited[nodeIdx]) continue;
+			if (visited[nodeIdx])
+				continue;
 
 			// found a point with snapshot
 			if (graphRevSnap[nodeIdx].size() > 0) {
 				for (uint32_t snapshotIdx : graphRevSnap[nodeIdx]) {
-					for (uint32_t originIdx: graphSnapOrigin[snapshotIdx]) {
+					for (uint32_t originIdx : graphSnapOrigin[snapshotIdx]) {
 						forkSnapshotOrigin.insert(mp(snapshotIdx, originIdx));
 					}
 				}
@@ -232,14 +234,22 @@ void exportFork(const string& id, const string& exportPath)
 	}
 
 	ofstream fout;
-	string outFilePath = exportPath + "/" + id + ".csv";
+	string outFilePath = exportPath + "/" + to_string(originId) + ".csv";
+	fout << "snapshot_id,origin_id\n";
+	for (set<ii>::iterator it = forkSnapshotOrigin.begin(); it != forkSnapshotOrigin.end(); ++it) {
+		fout << snapshots[it->first].id << ',' << origins[it->second].id << "\n";
+	}
 	fout.open(outFilePath);
 }
 
 int main(int argc, char **argv)
 {
 	loadRevisionHistory(argv[1]);
-	loadOriginSnapshot(argv[2]);
-	exportFork("1", argv[3]);
+	//loadOriginSnapshot(argv[2]);
+	string buffer(argv[4]);
+	stringstream ss(buffer);
+	uint32_t startOriginId;
+	ss >> startOriginId;
+	//exportFork(startOriginId, argv[3]);
 	return 0;
 }
