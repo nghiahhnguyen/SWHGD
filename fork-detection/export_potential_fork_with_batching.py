@@ -26,8 +26,8 @@ class Neo4jQuery(object):
 
     @staticmethod
     def _run_query(tx, fp, output_fp, skip, batch_size):
-        query = "CALL apoc.export.csv.query(\"CALL apoc.load.csv($fp, {skip: $skip, limit: $batch_size}) yield snapshot_id AS query_snapshot_id, node_id AS query_revision_id \
-            MATCH (r:Revision{id: query_revision_id}) WITH query_revision_id, query_snapshot_id, r \
+        query = "CALL apoc.export.csv.query(\"CALL apoc.load.csv($fp, {skip: $skip, limit: $batch_size}) yield lineNo, list, map \
+            MATCH (r:Revision{id: map.node_id}) WITH map.node_id AS query_revision_id, map.snapshot_id AS query_snapshot_id, r \
                 CALL apoc.path.subgraphNodes(r, {relationshipFilter: '<PARENT'}) YIELD node WITH query_revision_id, query_snapshot_id, node MATCH(fork_snapshot:Snapshot)-[:BRANCH]->(node)  WHERE fork_snapshot.type is null and fork_snapshot.id <> query_snapshot_id WITH query_revision_id, query_snapshot_id, fork_snapshot.id AS fork_snapshot_id RETURN DISTINCT query_snapshot_id, query_revision_id, fork_snapshot_id;\", $output_fp, {})"
         result = tx.run(query, fp=fp, output_fp=output_fp, skip=skip, batch_size=batch_size)
         return result.single()[0]
