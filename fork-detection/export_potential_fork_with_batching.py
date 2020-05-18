@@ -28,7 +28,7 @@ class Neo4jQuery(object):
     def _run_query(tx, input_fp, output_fp, skip, batch_size):
         query = "CALL apoc.export.csv.query(\"CALL apoc.load.csv({input_fp}, {skip: {skip}, limit: {batch_size}}) yield lineNo, list, map \
             MATCH (r:Revision{id: map.node_id}) WITH map.node_id AS query_revision_id, map.snapshot_id AS query_snapshot_id, r \
-                CALL apoc.path.subgraphNodes(r, {relationshipFilter: '<PARENT'}) YIELD node WITH query_revision_id, query_snapshot_id, node MATCH(fork_snapshot:Snapshot)-[:BRANCH]->(node)  WHERE fork_snapshot.type is null and fork_snapshot.id <> query_snapshot_id WITH query_revision_id, query_snapshot_id, fork_snapshot.id AS fork_snapshot_id RETURN DISTINCT query_snapshot_id, query_revision_id, fork_snapshot_id;\", {output_fp}, {})"
+                CALL apoc.path.subgraphNodes(r, {relationshipFilter: '<PARENT'}) YIELD node WITH query_revision_id, query_snapshot_id, node MATCH(fork_snapshot:Snapshot)-[:BRANCH]->(node)  WHERE fork_snapshot.type is null and fork_snapshot.id <> query_snapshot_id WITH query_revision_id, query_snapshot_id, fork_snapshot.id AS fork_snapshot_id RETURN DISTINCT query_snapshot_id, query_revision_id, fork_snapshot_id;\", {output_fp}, {input_fp: input_fp, skip:skip, batch_size:batch_size})"
         result = tx.run(query, 
                 input_fp=input_fp, 
                 output_fp=output_fp, 
