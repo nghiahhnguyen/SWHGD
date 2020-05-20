@@ -36,6 +36,7 @@
 
 # virtualenv
 .env/
+<<<<<<< HEAD
 .*/venv/*
 .ipynb_checkpoints
 .env
@@ -187,3 +188,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 *.pyc
+venv/
