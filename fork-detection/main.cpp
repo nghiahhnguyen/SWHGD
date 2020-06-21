@@ -63,8 +63,7 @@ unordered_map<uint32_t, uint32_t> originIdToGraphIdx, snapshotIdToGraphIdx;
 
 uint32_t mergeRevision(const string &id)
 {
-	uint32_t currentIdx;
-	currentIdx = uint32_t(graphParents.size());
+	uint32_t currentIdx = uint32_t(graphParents.size());
 	unordered_map<string, uint32_t>::const_iterator it = revisionIdToGraphIdx.find(id);
 
 	// not exist yet
