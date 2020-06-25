@@ -19,17 +19,17 @@ for lines in pd.read_csv("/mnt/17volume/data/snapshot_revision_git.csv.gz", comp
                 if len(snapshots) > 0:
                     snapshots[snapshot_id].sort()
                     #print(len(snapshots[snapshot_id]))
-                    if len(snapshots[snapshot_id]) > 1:                        
+                    if len(snapshots[snapshot_id]) > 1:
                         m = abs(int(snapshots[snapshot_id][-1]) - int(snapshots[snapshot_id][0]) )
                         longevity[snapshot_id] = m
                         #print(snapshot_id,' ', longevity[snapshot_id])
-                        
+
                         s  = pd.Series(longevity,index=longevity.keys())
                         df = pd.DataFrame(s.items(), columns=['snapshot_id', 'longevity'])
                         #print(df)
                         df.to_csv('/home/sv/longevity.csv.gz', compression = 'gzip', mode ='w', header=True, index=False)
                     del snapshots[snapshot_id]
-                    
+
                 snapshot_id = line[1][0]
                 snapshots[snapshot_id] = [line[1][2]]
             else:

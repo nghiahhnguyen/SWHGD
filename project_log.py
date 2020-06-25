@@ -112,7 +112,7 @@ def get_project_info(name):
                                 if rev.author not in weekly_contributors and rev.date <= weekly_wnd[0]:
                                     weekly_contributors.append(rev.author)
                                 if rev.date <= weekly_wnd[weekly_idx]:
-                                    if rev.author not in daily_temp_contrib:
+                                    if rev.author not in weekly_temp_contrib:
                                         weekly_temp_contrib.append(rev.author)
                                 else:
                                     weekly_contributors = intersection(weekly_contributors, weekly_temp_contrib)
@@ -129,7 +129,7 @@ def get_project_info(name):
                                 if rev.author not in monthly_contributors and rev.date <= monthly_wnd[0]:
                                     monthly_contributors.append(rev.author)
                                 if rev.date <= monthly_wnd[monthly_idx]:
-                                    if rev.author not in daily_temp_contrib:
+                                    if rev.author not in monthly_temp_contrib:
                                         monthly_temp_contrib.append(rev.author)
                                 else:
                                     monthly_contributors = intersection(monthly_contributors, monthly_temp_contrib)
