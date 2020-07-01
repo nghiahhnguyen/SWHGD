@@ -6,11 +6,11 @@ import pandas as pd
 import gc
 import os
 from multiprocessing import Process
-def calculate_longevity(name):
+def calculate_cycle_times(name):
     info(name)
     cnt = 0
     snapshots = {}
-    longevity = {}
+    cycle_times = {}
     snapshot_id = 0
     for lines in pd.read_csv("/mnt/17volume/data/snapshot_revision_git.csv.gz.part" + name, chunksize=1000, encoding='utf-8', header=None):
         for line in lines.iterrows():
@@ -28,17 +28,17 @@ def calculate_longevity(name):
                             tmp = []
                             if len(snapshots[snapshot_id]) > 1:
                                 for i in range(len(snapshots[snapshot_id])-1):
-                                    tmp.append(abs(snapshots[snapshot_id][i] - snapshots[snapshot_id][i+1]))
+                                    tmp.append(abs(int(snapshots[snapshot_id][i]) - int(snapshots[snapshot_id][i+1])))
                                 m = sum(tmp)/len(tmp)
                                 cycle_times[snapshot_id] = m
                                 #print(snapshot_id,' ', cycle_times[snapshot_id])
                                 s  = pd.Series(cycle_times,index=cycle_times.keys())
                                 df = pd.DataFrame({
                                     'snapshot_id':[snapshot_id], 
-                                    'cycle_time':[m]
+                                    'cycle_times':[m]
                                 })
                                 #print(df)
-                                df.to_csv('/home/sv/cycle_time-' + name + '.csv.gz', compression = 'gzip', mode ='a', header=False, index=False)
+                                df.to_csv('/home/sv/cycle_time_' + name + '.csv.gz', compression = 'gzip', mode ='a', header=False, index=False)
                             del snapshots[snapshot_id]
                         del snapshots
                         gc.collect()
@@ -63,15 +63,15 @@ def info(title):
     print('process id:', os.getpid())
     
 if __name__ == '__main__':
-    p1 = Process(target=calculate_longevity, args = ('aa',))
+    p1 = Process(target=calculate_cycle_times, args = ('aa',))
     p1.start()
-    p2 = Process(target=calculate_longevity, args = ('ab',))
+    p2 = Process(target=calculate_cycle_times, args = ('ab',))
     p2.start()
-    p3 = Process(target=calculate_longevity, args = ('ac',))
+    p3 = Process(target=calculate_cycle_times, args = ('ac',))
     p3.start()  
-    p4 = Process(target=calculate_longevity, args = ('ad',))
+    p4 = Process(target=calculate_cycle_times, args = ('ad',))
     p4.start()  
-    p5 = Process(target=calculate_longevity, args = ('ae',))
+    p5 = Process(target=calculate_cycle_times, args = ('ae',))
     p5.start()
-    p6 = Process(target=calculate_longevity, args = ('af',))
+    p6 = Process(target=calculate_cycle_times, args = ('af',))
     p6.start()
