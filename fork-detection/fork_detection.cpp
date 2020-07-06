@@ -19,7 +19,12 @@ typedef unordered_map<string, uint32_t> cati;
 typedef pair<uint32_t, uint32_t> ii;
 
 //=========================== DATA STRUCTURE ==========================
-
+class Revision {
+public:
+	Revision()
+		: revisionId(0), date(0){};
+	uint64_t revisionId, date;
+};
 
 //=========================== FUNCTIONS ==========================
 
@@ -54,8 +59,28 @@ void loadRevisionHistory(char *filePath)
 		 << "Total size till now: revisions - " << revisions.size() << endl;
 }
 
+Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
+{
+	unordered_map<int, Revision> idToRevision;
+
+	// store the first repo information to a tree
+	for (Revision revision : original) {
+		idToRevision.insert(mp(revision.revisionId, revision));
+	}
+
+	// extract the latest fork position
+	for (auto revisionIter = potentialFork.rbegin(); revisionIter != potentialFork.rend(); ++revisionIter) {
+		auto seekIter = idToRevision.find(revisionIter->revisionId);
+		// if there is match
+		if (seekIter != idToRevision.end()) {
+			return *revisionIter;
+		}
+	}
+	return Revision();
+}
+
 int main(int argc, char **argv)
 {
-    
+
 	return 0;
 }
