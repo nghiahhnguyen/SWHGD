@@ -11,6 +11,10 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#define BOOST_IOSTREAMS_NO_LIB
 
 using namespace std;
 
@@ -29,35 +33,37 @@ public:
 //=========================== FUNCTIONS ==========================
 
 // load the record into the memory
-void loadRevisionHistory(char *filePath)
-{
-	auto start = chrono::high_resolution_clock::now();
-	ifstream fin;
-	fin.open(filePath);
+// void loadRevisionHistory(char *filePath)
+// {
+// 	auto start = chrono::high_resolution_clock::now();
+// 	ifstream fin;
+// 	fin.open(filePath);
 
-	string line;
-	// skip the header
-	getline(fin, line);
-	string id, parentId, parentRankStr;
-	int parentRank;
-	while (getline(fin, line)) {
-		stringstream ss(line);
-		getline(ss, id, ',');
-		getline(ss, parentId, ',');
-		getline(ss, parentRankStr, '\n');
-		parentRank = stoi(parentRankStr);
-		uint32_t revisionIdx = mergeRevision(id),
-				 parentRevisionIdx = mergeRevision(parentId);
-		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
-		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
-	}
-	fin.close();
-	auto stop = chrono::high_resolution_clock::now();
-	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
+// 	string line;
+// 	// skip the header
+// 	getline(fin, line);
+// 	string id, parentId, parentRankStr;
+// 	int parentRank;
+// 	while (getline(fin, line)) {
+// 		stringstream ss(line);
+// 		getline(ss, id, ',');
+// 		getline(ss, parentId, ',');
+// 		getline(ss, parentRankStr, '\n');
+// 		parentRank = stoi(parentRankStr);
+// 		uint32_t revisionIdx = mergeRevision(id),
+// 				 parentRevisionIdx = mergeRevision(parentId);
+// 		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
+// 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
+// 	}
+// 	fin.close();
+// 	auto stop = chrono::high_resolution_clock::now();
+// 	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
 
-	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
-		 << "Total size till now: revisions - " << revisions.size() << endl;
-}
+// 	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
+// 		 << "Total size till now: revisions - " << revisions.size() << endl;
+// }
+
+
 
 Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
 {
