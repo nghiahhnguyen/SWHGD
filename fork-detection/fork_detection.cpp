@@ -11,12 +11,16 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+<<<<<<< HEAD
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #define BOOST_IOSTREAMS_NO_LIB
 
 using namespace std;
+=======
+#include <boost/assign.hpp>
+>>>>>>> add fork code
 
 #define mp make_pair
 typedef unordered_map<string, uint32_t> cati;
@@ -72,6 +76,47 @@ Revision findForkPositions(const vector<Revision> &original, const vector<Revisi
 	// store the first repo information to a tree
 	for (Revision revision : original) {
 		idToRevision.insert(mp(revision.revisionId, revision));
+void loadRevisionHistory(char *name)
+{
+    //Read from the first command line argument, assume it's gzipped
+    std::ifstream file(argv[1], std::ios_base::in | std::ios_base::binary);
+    boost::iostreams::filtering_streambuf<boost::iostreams::input> inbuf;
+    inbuf.push(boost::iostreams::gzip_decompressor());
+    inbuf.push(file);
+    //Convert streambuf to istream
+    std::istream instream(&inbuf);
+    //Iterate lines
+    std::string line;
+	getline(fin, line);
+    while(std::getline(instream, line)) {
+        std::cout << line << std::endl;
+    }
+    //Cleanup
+    file.close();
+	
+	string basePath = "/mnt/17volume/data/snapshot_revision_git.csv.gz.part" + name;
+	auto start = chrono::high_resolution_clock::now();
+	string filePath = basePath + name;
+	ifstream fin;
+	fin.open(filePath);
+
+	string line;
+	// skip the header
+	if (name = "aa") {
+		
+	}
+	string id, parentId, ;
+	int parentRank;
+	while (getline(fin, line)) {
+		stringstream ss(line);
+		getline(ss, id, ',');
+		getline(ss, parentId, ',');
+		getline(ss, parentRankStr, '\n');
+		parentRank = stoi(parentRankStr);
+		uint32_t revisionIdx = mergeRevision(id),
+				 parentRevisionIdx = mergeRevision(parentId);
+		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
+		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
 	}
 
 	// extract the latest fork position
