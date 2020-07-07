@@ -70,6 +70,15 @@ public:
 
 std::unordered_set<uint64_t>snapshots;
 
+const uint64_t MIN_DATE = 1517097600;
+
+std::unordered_map<std::string,uint64_t> buildSnapshotTable(const std::vector<Revision*> &snapshot) {
+	std::unordered_map<std::string,uint64_t> result;
+	for(Revision *revision : snapshot) {
+		result[revision->revisionID] = revision->date;
+	}
+	return result;
+}
 void loadRevisionHistory(std::string name)
 {
 	std::vector<std::vector<Revision*>> revisionSnapshots;
@@ -104,18 +113,29 @@ void loadRevisionHistory(std::string name)
 			}
 			++cnt;
 		}
-		if(snapshots.count(snapshotID)) {
-			revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
-		}else {
-			revisionSnapshots.emplace_back(std::vector<Revision*>{});
-			revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
-			std::cout<<"Snapshot id: "<<snapshotID<<" with number: "<<snapshots.size()<<std::endl;
-			snapshots.insert(snapshotID);
-		}
+		if(date >= MIN_DATE) {
+			if(snapshots.count(snapshotID)) {
+				revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
+			}else {
+				revisionSnapshots.emplace_back(std::vector<Revision*>{});
+				revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
+				std::cout<<"Snapshot id: "<<snapshotID<<" with number: "<<snapshots.size()<<std::endl;
+				snapshots.insert(snapshotID);
+			}
+		}		
     }
     //Cleanup
     file.close();
-	
+	//sort date
+	for(int i = 0; i < revisionSnapshots.size(); ++i) {
+		sort(revisionSnapshots[i].begin(), revisionSnapshots[i].end(), [](const Revision* lhs, const Revision* rhs){
+			return lhs->date < rhs->date;
+		});
+	}
+	for(int i = 0; i < revisionSnapshots.size(); ++i) {
+		std::unordered_map<std::string, uint64_t> snapshotTable = buildSnapshotTable(revisionSnapshots[i]); 
+		
+	}
 }
 
 // Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
