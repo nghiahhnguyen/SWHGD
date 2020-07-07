@@ -68,7 +68,7 @@ public:
 // 		 << "Total size till now: revisions - " << revisions.size() << endl;
 // }
 
-std::unordered_set<uint64_t>snapshots;
+std::vector<uint64_t>snapshots;
 
 const uint64_t MIN_DATE = 1517097600;
 
@@ -78,6 +78,11 @@ std::unordered_map<std::string,uint64_t> buildSnapshotTable(const std::vector<Re
 		result[revision->revisionID] = revision->date;
 	}
 	return result;
+}
+std::string uint64_to_string( uint64_t value ) {
+    std::ostringstream os;
+    os << value;
+    return os.str();
 }
 void loadRevisionHistory(std::string name)
 {
@@ -114,28 +119,56 @@ void loadRevisionHistory(std::string name)
 			++cnt;
 		}
 		if(date >= MIN_DATE) {
-			if(snapshots.count(snapshotID)) {
-				revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
-			}else {
+			//the first snapshot
+			if(snapshots.size() == 0){
+				snapshots.emplace_back(snapshotID);
 				revisionSnapshots.emplace_back(std::vector<Revision*>{});
 				revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
-				std::cout<<"Snapshot id: "<<snapshotID<<" with number: "<<snapshots.size()<<std::endl;
-				snapshots.insert(snapshotID);
+				std::cout<<"Snapshot id: "<<snapshotID<<"with number: "<<snapshots.size()<<std::endl;
+			}else {
+				if(snapshotID == snapshots[index]){//old snapshot
+					revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
+				}else {//new snapshot
+					snapshots.emplace_back(snapshotID);
+					revisionSnapshots.emplace_back(std::vector<Revision*>{});
+					++index;
+					revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
+					std::cout<<"Snapshot id: "<<snapshotID<<"with number: "<<snapshots.size()<<std::endl;
+				}
 			}
 		}		
     }
     //Cleanup
     file.close();
 	//sort date
-	for(int i = 0; i < revisionSnapshots.size(); ++i) {
+	for(int i = 0; i < int(revisionSnapshots.size()); ++i) {
 		sort(revisionSnapshots[i].begin(), revisionSnapshots[i].end(), [](const Revision* lhs, const Revision* rhs){
 			return lhs->date < rhs->date;
 		});
 	}
-	for(int i = 0; i < revisionSnapshots.size(); ++i) {
+	std::ofstream myfile;
+	myfile.open("/mnt/17volume/data/snapshot_fork_date.csv");
+	for(int i = 0; i < int(revisionSnapshots.size()); ++i) {
 		std::unordered_map<std::string, uint64_t> snapshotTable = buildSnapshotTable(revisionSnapshots[i]); 
-		
+		for(int j = 0; j < int(revisionSnapshots.size()); ++j) {
+			if(j != i) {
+				for(int k = revisionSnapshots[j].size()-1; k >= 0; --k) {
+					if(snapshotTable.count(revisionSnapshots[j][k]->revisionID)) {
+						std::string ret="";
+						ret += uint64_to_string(snapshots[i]);
+						ret += ",";
+						ret += uint64_to_string(snapshots[j]);
+						ret += ",";
+						ret += uint64_to_string(revisionSnapshots[j][k]->date);
+						ret += "\n";
+						myfile<<ret;
+						break;
+					}
+				}
+			}
+		}
 	}
+	myfile.close();
 }
 
 // Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
