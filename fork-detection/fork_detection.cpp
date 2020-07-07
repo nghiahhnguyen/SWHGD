@@ -11,17 +11,13 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-<<<<<<< HEAD
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #define BOOST_IOSTREAMS_NO_LIB
+#include <boost/assign.hpp>
 
 using namespace std;
-=======
-#include <boost/assign.hpp>
->>>>>>> add fork code
-
 #define mp make_pair
 typedef unordered_map<string, uint32_t> cati;
 typedef pair<uint32_t, uint32_t> ii;
