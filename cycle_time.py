@@ -20,7 +20,7 @@ def calculate_cycle_times(name):
                 cnt+=1
                 continue
             try:    
-                if line[1][2] == line[1][2]:
+                if line[1][4] == line[1][4]:
                     if line[1][0] not in snapshots:
                         if len(snapshots) > 0:
                             snapshots[snapshot_id].sort()

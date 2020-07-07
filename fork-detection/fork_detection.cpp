@@ -13,21 +13,26 @@
 #include <vector>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#define BOOST_IOSTREAMS_NO_LIB
+#include <boost/iostreams/filter/gzip.hpp>
 #include <boost/assign.hpp>
+#include <unordered_set>
+#include <algorithm>
 
-using namespace std;
-#define mp make_pair
-typedef unordered_map<string, uint32_t> cati;
-typedef pair<uint32_t, uint32_t> ii;
+#define mp std::make_pair
+typedef std::unordered_map<std::string, uint32_t> cati;
+typedef std::pair<uint32_t, uint32_t> ii;
 
 //=========================== DATA STRUCTURE ==========================
 class Revision {
 public:
 	Revision()
-		: revisionId(0), date(0){};
-	uint64_t revisionId, date;
+		: revisionID(""), date(1){};
+	std::string revisionID;
+	uint64_t date;
+	Revision(const std::string &revisionID, const uint64_t &date){
+		this->revisionID = revisionID;
+		this->date = date;
+	}
 };
 
 //=========================== FUNCTIONS ==========================
@@ -63,19 +68,14 @@ public:
 // 		 << "Total size till now: revisions - " << revisions.size() << endl;
 // }
 
+std::unordered_set<uint64_t>snapshots;
 
-
-Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
+void loadRevisionHistory(std::string name)
 {
-	unordered_map<int, Revision> idToRevision;
-
-	// store the first repo information to a tree
-	for (Revision revision : original) {
-		idToRevision.insert(mp(revision.revisionId, revision));
-void loadRevisionHistory(char *name)
-{
+	std::vector<std::vector<Revision*>> revisionSnapshots;
+	int index = 0;
     //Read from the first command line argument, assume it's gzipped
-    std::ifstream file(argv[1], std::ios_base::in | std::ios_base::binary);
+    std::ifstream file(name, std::ios_base::in | std::ios_base::binary);
     boost::iostreams::filtering_streambuf<boost::iostreams::input> inbuf;
     inbuf.push(boost::iostreams::gzip_decompressor());
     inbuf.push(file);
@@ -83,51 +83,54 @@ void loadRevisionHistory(char *name)
     std::istream instream(&inbuf);
     //Iterate lines
     std::string line;
-	getline(fin, line);
+	getline(instream, line);
     while(std::getline(instream, line)) {
-        std::cout << line << std::endl;
+		std::stringstream s_stream(line);
+		int cnt = 0;
+		uint64_t snapshotID = 1;
+		std::string revisionID = "";
+		uint64_t date = 1;
+		while(s_stream.good()) {
+			std::string substr;
+			std::getline(s_stream, substr, ',');
+			substr.erase(std::remove(substr.begin(),substr.end(),'\"'),substr.end());
+			std::istringstream iss(substr);
+			if (cnt == 0) {
+				iss>>snapshotID;
+			}else if (cnt==1) {
+				iss>>revisionID;
+			}else if(cnt == 2) {
+				iss>>date;
+			}
+			++cnt;
+		}
+		if(snapshots.count(snapshotID)) {
+			revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
+		}else {
+			revisionSnapshots.emplace_back(std::vector<Revision*>{});
+			revisionSnapshots[index].emplace_back(new Revision(revisionID, date));
+			std::cout<<"Snapshot id: "<<snapshotID<<" with number: "<<snapshots.size()<<std::endl;
+			snapshots.insert(snapshotID);
+		}
     }
     //Cleanup
     file.close();
 	
-	string basePath = "/mnt/17volume/data/snapshot_revision_git.csv.gz.part" + name;
-	auto start = chrono::high_resolution_clock::now();
-	string filePath = basePath + name;
-	ifstream fin;
-	fin.open(filePath);
-
-	string line;
-	// skip the header
-	if (name = "aa") {
-		
-	}
-	string id, parentId, ;
-	int parentRank;
-	while (getline(fin, line)) {
-		stringstream ss(line);
-		getline(ss, id, ',');
-		getline(ss, parentId, ',');
-		getline(ss, parentRankStr, '\n');
-		parentRank = stoi(parentRankStr);
-		uint32_t revisionIdx = mergeRevision(id),
-				 parentRevisionIdx = mergeRevision(parentId);
-		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
-		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
-	}
-
-	// extract the latest fork position
-	for (auto revisionIter = potentialFork.rbegin(); revisionIter != potentialFork.rend(); ++revisionIter) {
-		auto seekIter = idToRevision.find(revisionIter->revisionId);
-		// if there is match
-		if (seekIter != idToRevision.end()) {
-			return *revisionIter;
-		}
-	}
-	return Revision();
 }
 
-int main(int argc, char **argv)
-{
+// Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
+// {
+// 	unordered_map<int, Revision> idToRevision;
 
+// 	// store the first repo information to a tree
+// 	for (Revision revision : original) {
+// 		idToRevision.insert(mp(revision.revisionId, revision));
+// 	}
+// }
+
+int main()
+{
+	std::string filename = "/mnt/17volume/data/snapshot_revision_git.csv.gz";
+	loadRevisionHistory(filename);
 	return 0;
 }
