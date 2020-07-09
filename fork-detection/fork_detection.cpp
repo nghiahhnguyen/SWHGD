@@ -17,6 +17,7 @@
 #include <boost/assign.hpp>
 #include <unordered_set>
 #include <algorithm>
+#include <thread>
 
 #define mp std::make_pair
 typedef std::unordered_map<std::string, uint32_t> cati;
@@ -84,6 +85,14 @@ std::string uint64_to_string( uint64_t value ) {
     os << value;
     return os.str();
 }
+
+void sortVectorByDate(int start, int end, std::vector<std::vector<Revision*>> &revisionShapshots) {
+	for(int i = start; i < end; ++i) {
+		std::sort(revisionShapshots[i].begin(), revisionShapshots[i].end(), [](const Revision* lhs, const Revision* rhs){
+			return lhs->date < rhs->date;
+		});
+	}
+}
 void loadRevisionHistory(std::string name)
 {
 	std::vector<std::vector<Revision*>> revisionSnapshots;
@@ -98,6 +107,7 @@ void loadRevisionHistory(std::string name)
     //Iterate lines
     std::string line;
 	getline(instream, line);
+	auto t_start = std::chrono::high_resolution_clock::now();
     while(std::getline(instream, line)) {
 		std::stringstream s_stream(line);
 		int cnt = 0;
@@ -140,16 +150,41 @@ void loadRevisionHistory(std::string name)
     }
     //Cleanup
     file.close();
+	auto t_end = std::chrono::high_resolution_clock::now();
+	double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+	elapsed_time_ms /= 1000.0;
+	std::cout<<"finish read: "<<elapsed_time_ms<<" seconds."<<std::endl;
 	//sort date
-	for(int i = 0; i < int(revisionSnapshots.size()); ++i) {
-		sort(revisionSnapshots[i].begin(), revisionSnapshots[i].end(), [](const Revision* lhs, const Revision* rhs){
-			return lhs->date < rhs->date;
-		});
+	t_start = std::chrono::high_resolution_clock::now();
+	std::vector<std::thread> threads;
+	int start = 0;
+	int end = 60724;
+	const int step = 60724;
+	int len = revisionSnapshots.size();
+	while(end < len) {
+		threads.emplace_back(std::thread(sortVectorByDate, start, end, std::ref(revisionSnapshots)));
+		start += step;
+		end = std::min(end + step, len);
 	}
+	threads.emplace_back(std::thread(sortVectorByDate, revisionSnapshots, start, end, std::ref(revisionSnapshots)));
+	for(auto &th: threads) {
+		th.join();
+	}
+	t_end = std::chrono::high_resolution_clock::now();
+	elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+	elapsed_time_ms /= 1000.0;
+	std::cout<<"finish sort: "<<elapsed_time_ms<<" seconds."<<std::endl;
 	std::ofstream myfile;
-	myfile.open("/mnt/17volume/data/snapshot_fork_date.csv");
+	myfile.open("/home/sv/snapshot_fork_date.csv", std::ofstream::out | std::ofstream::app);
+	t_start = std::chrono::high_resolution_clock::now();
 	for(int i = 0; i < int(revisionSnapshots.size()); ++i) {
-		std::unordered_map<std::string, uint64_t> snapshotTable = buildSnapshotTable(revisionSnapshots[i]); 
+		auto t_start_build = std::chrono::high_resolution_clock::now();
+		std::unordered_map<std::string, uint64_t> snapshotTable = buildSnapshotTable(revisionSnapshots[i]);
+		std::cout<<"finish build snapshot table with snapshot: "<<snapshots[i]<<" and number: "<<i<<std::endl;
+		auto t_end_build = std::chrono::high_resolution_clock::now();
+		double elapsed_time_ms_build = std::chrono::duration<double, std::milli>(t_end_build-t_start_build).count();
+		elapsed_time_ms_build /= 1000.0;
+		std::cout<<"Time: "<<elapsed_time_ms_build<<" seconds."<<std::endl;
 		for(int j = 0; j < int(revisionSnapshots.size()); ++j) {
 			if(j != i) {
 				for(int k = revisionSnapshots[j].size()-1; k >= 0; --k) {
@@ -168,6 +203,10 @@ void loadRevisionHistory(std::string name)
 			}
 		}
 	}
+	t_end = std::chrono::high_resolution_clock::now();
+	elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+	elapsed_time_ms /= 1000.0;
+	std::cout<<"finish writing: "<<elapsed_time_ms<<" seconds."<<std::endl;
 	myfile.close();
 }
 
