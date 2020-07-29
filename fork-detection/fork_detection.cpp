@@ -37,38 +37,6 @@ public:
 };
 
 //=========================== FUNCTIONS ==========================
-
-// load the record into the memory
-// void loadRevisionHistory(char *filePath)
-// {
-// 	auto start = chrono::high_resolution_clock::now();
-// 	ifstream fin;
-// 	fin.open(filePath);
-
-// 	string line;
-// 	// skip the header
-// 	getline(fin, line);
-// 	string id, parentId, parentRankStr;
-// 	int parentRank;
-// 	while (getline(fin, line)) {
-// 		stringstream ss(line);
-// 		getline(ss, id, ',');
-// 		getline(ss, parentId, ',');
-// 		getline(ss, parentRankStr, '\n');
-// 		parentRank = stoi(parentRankStr);
-// 		uint32_t revisionIdx = mergeRevision(id),
-// 				 parentRevisionIdx = mergeRevision(parentId);
-// 		graphParents[revisionIdx].push_back(ParentRelationship(parentRank, parentRevisionIdx));
-// 		graphChildren[parentRevisionIdx].push_back(ParentRelationship(parentRank, revisionIdx));
-// 	}
-// 	fin.close();
-// 	auto stop = chrono::high_resolution_clock::now();
-// 	auto duration = chrono::duration_cast<chrono::minutes>(stop - start);
-
-// 	cout << "Finished loading file " << filePath << " after " << duration.count() << " mins\n"
-// 		 << "Total size till now: revisions - " << revisions.size() << endl;
-// }
-
 std::vector<uint64_t>snapshots;
 const uint64_t MIN_DATE = 1517097600;
 std::vector<std::vector<Revision>> revisionSnapshots;
@@ -229,50 +197,7 @@ void loadRevisionHistory(std::string name)
 	elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
 	elapsed_time_ms /= 1000.0;
 	std::cout<<"finish writing: "<<elapsed_time_ms<<" seconds."<<std::endl;
-
-	// t_start = std::chrono::high_resolution_clock::now();
-	// for(int i = 0; i < int(revisionSnapshots.size()); ++i) {
-	// 	auto t_start_build = std::chrono::high_resolution_clock::now();
-	// 	std::unordered_map<std::string, uint64_t> snapshotTable = buildSnapshotTable(revisionSnapshots[i]);
-	// 	std::cout<<"finish build snapshot table with snapshot: "<<snapshots[i]<<" and number: "<<i<<std::endl;
-	// 	auto t_end_build = std::chrono::high_resolution_clock::now();
-	// 	double elapsed_time_ms_build = std::chrono::duration<double, std::milli>(t_end_build-t_start_build).count();
-	// 	elapsed_time_ms_build /= 1000.0;
-	// 	std::cout<<"Time: "<<elapsed_time_ms_build<<" seconds."<<std::endl;
-	// 	for(int j = 0; j < int(revisionSnapshots.size()); ++j) {
-	// 		if(j != i) {
-	// 			for(int k = revisionSnapshots[j].size()-1; k >= 0; --k) {
-	// 				if(snapshotTable.count(revisionSnapshots[j][k].revisionID)) {
-	// 					std::string ret="";
-	// 					ret += uint64_to_string(snapshots[i]);
-	// 					ret += ",";
-	// 					ret += uint64_to_string(snapshots[j]);
-	// 					ret += ",";
-	// 					ret += uint64_to_string(revisionSnapshots[j][k].date);
-	// 					ret += "\n";
-	// 					myfile<<ret;
-	// 					break;
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-	// t_end = std::chrono::high_resolution_clock::now();
-	// elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-	// elapsed_time_ms /= 1000.0;
-	// std::cout<<"finish writing: "<<elapsed_time_ms<<" seconds."<<std::endl;
-	// myfile.close();
 }
-
-// Revision findForkPositions(const vector<Revision> &original, const vector<Revision> &potentialFork)
-// {
-// 	unordered_map<int, Revision> idToRevision;
-
-// 	// store the first repo information to a tree
-// 	for (Revision revision : original) {
-// 		idToRevision.insert(mp(revision.revisionId, revision));
-// 	}
-// }
 
 int main()
 {
