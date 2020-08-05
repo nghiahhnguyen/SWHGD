@@ -68,21 +68,25 @@ for i, row in df.iterrows():
         snapshot_fork_dict[row.snapshot_id][row.year][2][row.week] += 1
 
 print("The number of project with forks:", len(snapshot_fork_dict))
-for snapshot, revision_date_set in snapshot_fork_dict.items():
-    print(snapshot, len(revision_date_set))
+# for snapshot, revision_date_set in snapshot_fork_dict.items():
+#     print(snapshot, len(revision_date_set))
 
-def count_time_units_exists(months, unit_per_year=12):
+def count_time_units_exists(units, unit_per_year=12):
+    """Count the number of time a fork exists based on its fork records"""
+    # Initialize the number of units with 0
     units_exists = 0
-    first_year, first_month = months[0]
-    last_year, last_month = months[-1]
+    # The first record of the unit
+    first_year, first_unit = units[0]
+    # The last record of the unit
+    last_year, last_unit = units[-1]
     if last_year == first_year:
-        units_exists = last_month - first_month + 1
-    elif last_month < first_month:
-        extra_months = unit_per_year * (last_year - first_year) - 1
-        units_exists = last_month + (12 - first_month + 1) + extra_months
+        units_exists = last_unit - first_unit + 1
+    elif last_unit < first_unit:
+        extra_units = unit_per_year * (last_year - first_year - 1)
+        units_exists = last_unit + (unit_per_year - first_unit + 1) + extra_units
     else:
-        extra_months = unit_per_year * (last_year - first_year)
-        units_exists = last_month - first_month + extra_months
+        extra_units = unit_per_year * (last_year - first_year)
+        units_exists = last_unit - first_unit + extra_units + 1
     return units_exists
 
 def is_steady(units, unit_per_year=12):
@@ -140,24 +144,29 @@ for snapshot, revision_date_set in snapshot_fork_dict.items():
         count_years_with_fork += 1
     for year, month, freq in forks_month:
         if year > 2019 or (year == 2019 and month > 1):
-            print(year, month)
+#             print(year, month)
             continue
         months.append((year, month))
         count_months_with_fork += 1
     for year, week, freq in forks_week:
         if year > 2019 or (year == 2019 and week > 4):
-            print(year, week)
+#             print(year, week)
             continue
         weeks.append((year, week))
         count_weeks_with_fork += 1
     if len(months) == 0:
-        print("This snapshot has no viable fork date:", snapshot)
+#         print("This snapshot has no viable fork date:", snapshot)
         continue
+    print(f"Snapshot: {snapshot}")
+    print(f"Fork months: {months}")
+    print(f"Fork weeks: {weeks}")
     months.append((2019, 1))
-    weeks.append((2019, 4))
+    weeks.append((2019, 5))
     
     months_exist = count_time_units_exists(months, 12)
-    weeks_exist = count_time_units_exists(weeks, 53)
+    weeks_exist = count_time_units_exists(weeks, 52)
+    print("Months exist:", months_exist)
+    print("Weeks exist:", weeks_exist)
         
     snapshot_ids.append(snapshot)
     count_forks.append(count_fork)

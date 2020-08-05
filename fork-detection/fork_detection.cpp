@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -19,6 +18,8 @@
 #include <unordered_set>
 #include <algorithm>
 #include <thread>
+#include <chrono>
+#include <iomanip>
 
 #define mp std::make_pair
 typedef std::unordered_map<std::string, uint32_t> cati;
@@ -65,7 +66,7 @@ void sortVectorByDate(int start, int end) {
 
 void findFork(int start, int end) {
 	std::ofstream myfile;
-	myfile.open("/home/sv/snapshot_fork_date_" + std::to_string(start) + ".csv", std::ofstream::out | std::ofstream::app);
+	myfile.open("/home/sv/origin_dup_date_" + std::to_string(start) + ".csv", std::ofstream::out | std::ofstream::app);
 	auto t_start = std::chrono::high_resolution_clock::now();
 	for(int i = start; i < end; ++i) {
 		auto t_start_build = std::chrono::high_resolution_clock::now();
@@ -99,22 +100,30 @@ void findFork(int start, int end) {
 	std::cout<<"finish writing end at(excluded) "<<end<<": "<<elapsed_time_ms<<" seconds."<<std::endl;
 	myfile.close();
 }
+uint64_t getSecondsSince1970Until( std::string dateAndHour ) {
+  using namespace std;
+  tm tm = {};
+  std::stringstream ss( dateAndHour );
+  ss >> get_time(&tm, "%Y-%m-%d  %H:%M:%S%z");
+
+  chrono::system_clock::time_point tp = chrono::system_clock::from_time_t(mktime(&tm));
+
+
+  return
+    chrono::duration_cast<chrono::seconds>(
+                                           tp.time_since_epoch()).count();
+
+}
 
 void loadRevisionHistory(std::string name)
 {
 	int index = 0;
     //Read from the first command line argument, assume it's gzipped
-    std::ifstream file(name, std::ios_base::in | std::ios_base::binary);
-    boost::iostreams::filtering_streambuf<boost::iostreams::input> inbuf;
-    inbuf.push(boost::iostreams::gzip_decompressor());
-    inbuf.push(file);
-    //Convert streambuf to istream
-    std::istream instream(&inbuf);
+    std::ifstream file(name);
     //Iterate lines
     std::string line;
-	getline(instream, line);
 	auto t_start = std::chrono::high_resolution_clock::now();
-    while(std::getline(instream, line)) {
+    while(std::getline(file, line)) {
 		std::stringstream s_stream(line);
 		int cnt = 0;
 		uint64_t snapshotID = 1;
@@ -127,30 +136,29 @@ void loadRevisionHistory(std::string name)
 			std::istringstream iss(substr);
 			if (cnt == 0) {
 				iss>>snapshotID;
-			}else if (cnt==1) {
+			}else if (cnt==3) {
+				std::string _date;
+				iss>>_date;
+				date = getSecondsSince1970Until(_date);
+			}else if(cnt == 5) {
 				iss>>revisionID;
-			}else if(cnt == 2) {
-				iss>>date;
 			}
 			++cnt;
 		}
-		if(date >= MIN_DATE) {
-			//the first snapshot
-			if(snapshots.size() == 0){
+		if(snapshots.size() == 0){
+			snapshots.emplace_back(snapshotID);
+			revisionSnapshots.emplace_back(std::vector<Revision>{});
+			revisionSnapshots[index].emplace_back(Revision(revisionID, date));
+			std::cout<<"Snapshot id: "<<snapshotID<<"with number: "<<snapshots.size()<<std::endl;
+		}else {
+			if(snapshotID == snapshots[index]){//old snapshot
+				revisionSnapshots[index].emplace_back(Revision(revisionID, date));
+			}else {//new snapshot
 				snapshots.emplace_back(snapshotID);
 				revisionSnapshots.emplace_back(std::vector<Revision>{});
+				++index;
 				revisionSnapshots[index].emplace_back(Revision(revisionID, date));
 				std::cout<<"Snapshot id: "<<snapshotID<<"with number: "<<snapshots.size()<<std::endl;
-			}else {
-				if(snapshotID == snapshots[index]){//old snapshot
-					revisionSnapshots[index].emplace_back(Revision(revisionID, date));
-				}else {//new snapshot
-					snapshots.emplace_back(snapshotID);
-					revisionSnapshots.emplace_back(std::vector<Revision>{});
-					++index;
-					revisionSnapshots[index].emplace_back(Revision(revisionID, date));
-					std::cout<<"Snapshot id: "<<snapshotID<<"with number: "<<snapshots.size()<<std::endl;
-				}
 			}
 		}		
     }
@@ -163,7 +171,7 @@ void loadRevisionHistory(std::string name)
 	//sort date
 	t_start = std::chrono::high_resolution_clock::now();
 	int len = revisionSnapshots.size();
-	const int step = 60724;
+	const int step = 8746;
 	int start = 0;
 	int end = step;
 	std::vector<std::thread> threads;
@@ -202,7 +210,7 @@ void loadRevisionHistory(std::string name)
 
 int main()
 {
-	std::string filename = "/mnt/17volume/data/snapshot_revision_git.csv.gz";
+	std::string filename = "/home/sv/origin_revision_data.csv";
 	loadRevisionHistory(filename);
 	return 0;
 }

@@ -19,14 +19,14 @@ try:
     #record = cursor.fetchone()
     #print("You are connected to - ", record,"\n")
     cnt = 0
-    for lines in pd.read_csv('/home/sv/random_snapshot.csv', encoding='utf-8', header=None, chunksize=100):
+    for lines in pd.read_csv('/mnt/17volume/data/community_fork.csv', encoding='utf-8', header=None, chunksize=100000):
         for line in lines.iterrows():
-            print(line[1][0])
+            print('snapshot_id:',line[1][0])
             c = []
             c.append(int(line[1][0]))
             cursor.execute("SELECT o.url FROM origin_visit as ov join origin as o on ov.origin = o.id WHERE %s = ov.snapshot_id;", c)
             record = cursor.fetchone()
-            print(record[0])
+            print('url:',record[0])
             snapshot_urls.append(record[0])
 except (Exception, psycopg2.Error) as error :
     print ("Error while connecting to PostgreSQL", error)
@@ -37,4 +37,4 @@ finally:
         connection.close()
         print("PostgreSQL connection is closed")
     df = pd.DataFrame(snapshot_urls, columns=["snapshot_urls"])
-    df.to_csv('/home/sv/random_snapshot_urls.csv', index=False)
+    df.to_csv('/home/sv/snapshot_urls.csv', index=False)
