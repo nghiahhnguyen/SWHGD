@@ -39,7 +39,7 @@ public:
 };
 
 //=========================== FUNCTIONS ==========================
-const uint64_t MIN_DATE = 1517097600;
+const uint64_t MIN_DATE = 1451606400;
 std::unordered_map<uint64_t, std::vector<Revision>> revisionSnapshots;
 std::unordered_set<uint64_t> forks;
 std::unordered_set<uint64_t> communityForks;
@@ -166,8 +166,8 @@ void readForksFromFile(std::string filename) {
 			}
 			++cnt;
 		}
-        forks.insert(forkID);
-        forks.insert(snapshotID);
+        if (cnt == 3)
+            forks.insert(forkID);
     }
     std::cout<<forks.size()<<std::endl;
 }
@@ -178,7 +178,7 @@ void findCommunityFork(std::string filename) {
     //Iterate lines
     std::string line;
     std::ofstream outFile;
-    outFile.open("/home/sv/dup_parameters.csv", std::ofstream::out | std::ofstream::app);
+    outFile.open("/home/sv/fork_parameters_3.csv", std::ofstream::out | std::ofstream::app);
     while(std::getline(myFile, line)) {
         std::stringstream s_stream(line);
 		int cnt = 0;
@@ -264,9 +264,9 @@ void exportPersonalFork() {
 }
 
 int main() {
-    readForksFromFile("/home/sv/origin_dup_date.csv");
-    loadRevisionHistory("/home/sv/origin_revision_data.csv");
-    findCommunityFork("/home/sv/origin_dup_date.csv");
+    readForksFromFile("/home/sv/origin_fork_date_3.csv");
+    loadRevisionHistory("/mnt/17volume/data/origin_revision_data_3.csv");
+    findCommunityFork("/home/sv/origin_fork_date_3.csv");
     // exportCommunityFork();
     // exportPersonalFork();
     return 0;

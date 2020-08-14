@@ -7,6 +7,7 @@ import os
 from multiprocessing import Process
 
 class Metric:
+    origin_id = 0
     fork_counts = 0
     steady_fork = 0
     fork_frequency = 0.0
@@ -89,7 +90,7 @@ get_cycle_time_metric('cycle_time_release_3.csv')
 metrics = []
 for snapshot_id in snapshots:
     metric = snapshots[snapshot_id]
-    metrics.append([metric.fork_counts, metric.fork_frequency,\
+    metrics.append([snapshot_id, metric.fork_counts, metric.fork_frequency,\
     metric.steady_fork,\
     metric.commit_counts,\
     metric.contributor_counts, metric.daily_commit_frequency,\
@@ -100,7 +101,7 @@ for snapshot_id in snapshots:
 
 print(len(metrics))
 
-df = pd.DataFrame(metrics,columns=['fork_counts',\
+df = pd.DataFrame(metrics,columns=['origin', 'fork_counts',\
 'fork_frequency',\
 'steady_fork',\
 'commit_counts',\
@@ -114,6 +115,6 @@ df = pd.DataFrame(metrics,columns=['fork_counts',\
 'cycle_time'
     ])
 
-df.to_csv('/home/sv/fork_health_risk_3.csv',index=False,header=True)
+df.to_csv('/home/sv/origin_fork_health_risk_3.csv',index=False,header=True)
 
 
