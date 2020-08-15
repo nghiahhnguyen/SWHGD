@@ -41,7 +41,7 @@ public:
 //=========================== FUNCTIONS ==========================
 const uint64_t MIN_DATE = 1451606400;
 std::unordered_map<uint64_t, std::vector<Revision>> revisionSnapshots;
-std::unordered_set<uint64_t> forks;
+std::unordered_map<uint64_t, uint64_t> forks;
 std::unordered_set<uint64_t> communityForks;
 
 std::string uint64_to_string( uint64_t value ) {
@@ -154,6 +154,7 @@ void readForksFromFile(std::string filename) {
 		int cnt = 0;
 		uint64_t snapshotID = 1;
         uint64_t forkID = 1;
+        uint64_t date = 1;
         while(s_stream.good()) {
 			std::string substr;
 			std::getline(s_stream, substr, ',');
@@ -163,11 +164,22 @@ void readForksFromFile(std::string filename) {
             }
 			else if (cnt == 1) {
 				iss>>forkID;
-			}
+			}else if (cnt == 2) {
+                std::string _date;
+                iss>>_date;
+                date = getSecondsSince1970Until(_date);
+            }
 			++cnt;
 		}
-        if (cnt == 3)
-            forks.insert(forkID);
+        if (cnt == 3) {
+            if(!forks.count(forkID)) {
+                forks[forkID] = date;
+            }else {
+                if (date > forks[forkID]) {
+                    forks[forkID] = date;
+                }
+            }
+        }
     }
     std::cout<<forks.size()<<std::endl;
 }
@@ -179,89 +191,68 @@ void findCommunityFork(std::string filename) {
     std::string line;
     std::ofstream outFile;
     outFile.open("/home/sv/fork_parameters_3.csv", std::ofstream::out | std::ofstream::app);
-    while(std::getline(myFile, line)) {
-        std::stringstream s_stream(line);
-		int cnt = 0;
-		uint64_t forkID = 1;
-        uint64_t date = 1;
-        while(s_stream.good()) {
-			std::string substr;
-			std::getline(s_stream, substr, ',');
-			std::istringstream iss(substr);
-			if (cnt == 1) {
-				iss>>forkID;
-			}else if(cnt == 2) {
-                iss>>date;
-            }
-			++cnt;
-		}
-        if(communityForks.count(forkID)) {
-            continue;
-        }
+    for(auto &fork: forks) {
         auto t_start = std::chrono::high_resolution_clock::now();
-        std::cout<<"Fork id: "<<forkID<<std::endl;
+        std::cout<<"Fork id: "<<fork.first<<std::endl;
         std::unordered_set<uint64_t> authors;
         int commitCnt = 0;
-        for(int i = 0; i < int(revisionSnapshots[forkID].size()); ++i) {
-            if(revisionSnapshots[forkID][i].date > date && revisionSnapshots[forkID][i].date <= 1548633600) {
-                authors.insert(revisionSnapshots[forkID][i].author);
+        for(int i = 0; i < int(revisionSnapshots[fork.first].size()); ++i) {
+            if(revisionSnapshots[fork.first][i].date > fork.second && revisionSnapshots[fork.first][i].date <= 1548633600) {
+                authors.insert(revisionSnapshots[fork.first][i].author);
                 ++commitCnt;
             }
         }
-        std::cout<<"Fork: "<<forkID<<std::endl;
         std::string ret="";
-        ret += uint64_to_string(forkID);
+        ret += uint64_to_string(fork.first);
         ret += ",";
         ret += std::to_string(authors.size());
         ret += ",";
         ret += std::to_string(commitCnt);
         ret += "\n";
         outFile<<ret;
-        communityForks.insert(forkID);
         auto t_end = std::chrono::high_resolution_clock::now();
         double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
         elapsed_time_ms /= 1000.0;
-        std::cout<<"fork id: "<<forkID<<"finish: "<<elapsed_time_ms<<" seconds."<<std::endl;
+        std::cout<<"fork id: "<<fork.first<<"finish: "<<elapsed_time_ms<<" seconds."<<std::endl;
     }
     outFile.close();
-    myFile.close();
 }
 
-void exportCommunityFork() {
-    std::ofstream myfile;
-	myfile.open("/home/sv/community_dup.csv", std::ofstream::out | std::ofstream::app);
-	auto t_start = std::chrono::high_resolution_clock::now();
-    for(uint64_t forkID: communityForks) {
-        std::string ret="";
-        ret += uint64_to_string(forkID);
-        ret += "\n";
-        myfile<<ret;
-    }
-    auto t_end = std::chrono::high_resolution_clock::now();
-	auto elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-	elapsed_time_ms /= 1000.0;
-	std::cout<<"finish writing community forks: "<<elapsed_time_ms<<" seconds."<<std::endl;
-	myfile.close();
-}
+// void exportCommunityFork() {
+//     std::ofstream myfile;
+// 	myfile.open("/home/sv/community_dup.csv", std::ofstream::out | std::ofstream::app);
+// 	auto t_start = std::chrono::high_resolution_clock::now();
+//     for(uint64_t forkID: communityForks) {
+//         std::string ret="";
+//         ret += uint64_to_string(forkID);
+//         ret += "\n";
+//         myfile<<ret;
+//     }
+//     auto t_end = std::chrono::high_resolution_clock::now();
+// 	auto elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+// 	elapsed_time_ms /= 1000.0;
+// 	std::cout<<"finish writing community forks: "<<elapsed_time_ms<<" seconds."<<std::endl;
+// 	myfile.close();
+// }
 
-void exportPersonalFork() {
-    std::ofstream myfile;
-	myfile.open("/home/sv/personal_dup.csv", std::ofstream::out | std::ofstream::app);
-	auto t_start = std::chrono::high_resolution_clock::now();
-    for(uint64_t forkID: forks) {
-        if (!communityForks.count(forkID)){
-            std::string ret="";
-            ret += uint64_to_string(forkID);
-            ret += "\n";
-            myfile<<ret;
-        }
-    }
-    auto t_end = std::chrono::high_resolution_clock::now();
-	auto elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-	elapsed_time_ms /= 1000.0;
-	std::cout<<"finish writing personal forks: "<<elapsed_time_ms<<" seconds."<<std::endl;
-	myfile.close();
-}
+// void exportPersonalFork() {
+//     std::ofstream myfile;
+// 	myfile.open("/home/sv/personal_dup.csv", std::ofstream::out | std::ofstream::app);
+// 	auto t_start = std::chrono::high_resolution_clock::now();
+//     for(uint64_t forkID: forks) {
+//         if (!communityForks.count(forkID)){
+//             std::string ret="";
+//             ret += uint64_to_string(forkID);
+//             ret += "\n";
+//             myfile<<ret;
+//         }
+//     }
+//     auto t_end = std::chrono::high_resolution_clock::now();
+// 	auto elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+// 	elapsed_time_ms /= 1000.0;
+// 	std::cout<<"finish writing personal forks: "<<elapsed_time_ms<<" seconds."<<std::endl;
+// 	myfile.close();
+// }
 
 int main() {
     readForksFromFile("/home/sv/origin_fork_date_3.csv");
