@@ -14,16 +14,16 @@ origins = {}
 #                     origin_id = url_to_ids[row[0]]
 #                     origins[origin_id][0] = int(row[3])
 
-with open('/home/sv/fork_metrics.csv', 'r') as f:
+with open('/home/sv/fork_metrics_3.csv', 'r') as f:
     data = csv.reader(f)
     for row in data:
         origins[int(row[0])] = [int(row[1]), 0]
-with open('/home/sv/dup_metrics.csv', 'r') as f:
+with open('/home/sv/dup_metrics_3.csv', 'r') as f:
     data = csv.reader(f)
     for row in data:
         origins[int(row[0])][1] = int(row[1])
 
-with open('/home/sv/fork_dup.csv', 'w', newline='') as file:
+with open('/home/sv/fork_dup_3.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(["fork", "dup"])
     for origin in origins:

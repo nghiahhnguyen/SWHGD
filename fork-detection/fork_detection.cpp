@@ -66,7 +66,7 @@ void sortVectorByDate(int start, int end) {
 
 void findFork(int start, int end) {
 	std::ofstream myfile;
-	myfile.open("/home/sv/origin_dup_date_3_" + std::to_string(start) + ".csv", std::ofstream::out | std::ofstream::app);
+	myfile.open("/home/sv/origin_fork_date_3_" + std::to_string(start) + ".csv", std::ofstream::out | std::ofstream::app);
 	auto t_start = std::chrono::high_resolution_clock::now();
 	for(int i = start; i < end; ++i) {
 		auto t_start_build = std::chrono::high_resolution_clock::now();
@@ -141,11 +141,11 @@ void loadRevisionHistory(std::string name)
 			std::istringstream iss(substr);
 			if (cnt == 0) {
 				iss>>snapshotID;
-			}else if (cnt==3) {
+			}else if (cnt==4) {
 				std::string _date;
 				iss>>_date;
 				date = getSecondsSince1970Until(_date);
-			}else if(cnt == 7) {
+			}else if(cnt == 5) {
 				iss>>revisionID;
 			}
 			++cnt;
@@ -215,7 +215,7 @@ void loadRevisionHistory(std::string name)
 
 int main()
 {
-	std::string filename = "/mnt/17volume/data/origin_revision_data_3.csv";
+	std::string filename = "/mnt/17volume/databk/origin_revision_data_3.csv";
 	loadRevisionHistory(filename);
 	return 0;
 }
